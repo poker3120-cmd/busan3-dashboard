@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="부산3지점 통합 영업 대시보드 - PDF·PPT 자료를 분석해 A4 1페이지 홍보물과 영업 제안서를 자동으로 만듭니다. 모든 파일 처리는 브라우저 안에서만 이루어집니다.">
+<title>부산3지점 통합 영업 대시보드 | 1P 홍보물 · 제안서 자동생성</title>
+<link rel="icon" href="ci-seegene.png">
+<link rel="stylesheet" href="style.css?v=20261028f">
+</head>
+<body>
+
+<div id="app">
+
+  <header class="site-head">
+    <div class="head-inner">
+      <div class="brand-lockup">
+        <img class="brand-logo" src="ci-seegene.png" alt="재단법인 씨젠의료재단">
+        <span class="brand-divider" aria-hidden="true"></span>
+        <div class="brand-copy">
+          <h1>부산3지점 통합 영업 대시보드</h1>
+          <p>자료 1건 첨부 → A4 홍보물 1장 + 학술교육 화법지 + 제안서 자동 작성</p>
+        </div>
+      </div>
+      <div class="head-meta">
+        <span class="head-chip">영업관리 · 계획</span>
+        <span class="head-chip light">김해 · 부산 서부권</span>
+      </div>
+    </div>
+  </header>
+
+  <nav class="site-nav" aria-label="주요 메뉴">
+    <div class="nav-group">
+      <button type="button" class="navbtn active" data-page="home">홈</button>
+    </div>
+
+    <span class="nav-sep" aria-hidden="true"></span>
+
+    <div class="nav-group">
+      <span class="nav-group-label">Step 1 · 자료</span>
+      <button type="button" class="navbtn" data-page="materials">자료 첨부·분석</button>
+    </div>
+
+    <span class="nav-sep" aria-hidden="true"></span>
+
+    <div class="nav-group">
+      <span class="nav-group-label">Step 2 · 산출물</span>
+      <button type="button" class="navbtn" data-page="flyer"><span class="nav-num" aria-hidden="true">1</span>1P 홍보물</button>
+      <button type="button" class="navbtn" data-page="training"><span class="nav-num" aria-hidden="true">2</span>학술교육</button>
+      <button type="button" class="navbtn" data-page="proposal"><span class="nav-num" aria-hidden="true">3</span>제안서 작성</button>
+    </div>
+
+    <a class="navbtn" href="#jobs" data-page="jobs">🏥 신규개원·채용정보</a>
+    <button type="button" class="navbtn" data-page="aging">📊 숙성항목</button>
+
+    <span class="nav-spacer"></span>
+
+
+    <button type="button" class="navbtn navbtn--ghost" data-page="guide">사용 안내</button>
+  </nav>
+
+  <main>
+
+    <!-- ================= 홈 ================= -->
+    <section class="page active" id="home">
+
+      <!-- 브랜드 히어로 : CI 마크를 홈의 기준점으로 -->
+      <div class="brand-hero">
+        <div class="brand-hero-top">
+          <img class="brand-hero-logo" src="ci-seegene.png" alt="재단법인 씨젠의료재단">
+          <div class="brand-hero-id">
+            <p class="brand-hero-kicker">Seegene Medical Foundation</p>
+            <p class="brand-hero-branch">부산3지점 · 영업 지원</p>
+          </div>
+        </div>
+        <p class="brand-hero-desc">
+          재단에서 받은 <strong>PDF · PPTX 1건</strong>으로 <strong>홍보물 · 학술교육 화법지 · 제안서</strong>를 한 번에 준비합니다.
+          모든 파일은 브라우저 안에서만 처리됩니다.
+        </p>
+        <ol class="brand-hero-flow">
+          <li><b>STEP 1</b><span>자료 첨부·분석</span></li>
+          <li><b>STEP 2</b><span>1P 홍보물</span></li>
+          <li><b>STEP 3</b><span>학술교육 화법지</span></li>
+          <li><b>STEP 4</b><span>제안서 작성</span></li>
+        </ol>
+      </div>
+
+      <h2 class="mt-16">작업 현황</h2>
+      <p class="subtitle">자료를 첨부하면 분석 결과를 바탕으로 홍보물과 제안서를 만들 수 있습니다.</p>
+
+      <div class="grid grid4">
+        <div class="card stat-card">
+          <h3>첨부 자료</h3>
+          <div class="stat" id="statFiles">0</div>
+          <p class="meta" id="statFilesMeta">PDF · PPTX 파일</p>
+        </div>
+        <div class="card stat-card">
+          <h3>추출 텍스트</h3>
+          <div class="stat" id="statChars">0</div>
+          <p class="meta">글자 수 (공백 포함)</p>
+        </div>
+        <div class="card stat-card">
+          <h3>추출 이미지</h3>
+          <div class="stat" id="statImages">0</div>
+          <p class="meta">홍보물에 사용 가능</p>
+        </div>
+        <div class="card stat-card">
+          <h3>산출물 상태</h3>
+          <div class="stat" id="statFlyer">미작성</div>
+          <p class="meta" id="statFlyerMeta">홍보물 · 교육화법 미작성</p>
+        </div>
+      </div>
+
+      <h2 class="mt-16">시작하기</h2>
+      <p class="subtitle">순서대로 진행하면 한 번에 3종 산출물이 완성됩니다.</p>
+
+      <div class="grid grid2">
+        <div class="card flow-card">
+          <span class="flow-num">STEP 1</span>
+          <h3>자료 첨부·분석</h3>
+          <p>홍보용 PDF와 PPTX를 올리면 제목·핵심 문장·수치·검사 정보(검체, 일정, 소요시간, 검사코드, 수가)를 자동으로 뽑아 표로 정리합니다.</p>
+          <button type="button" class="launch" data-page="materials">자료 첨부하러 가기 →</button>
+        </div>
+        <div class="card flow-card">
+          <span class="flow-num">STEP 2</span>
+          <h3>1페이지 홍보물 생성</h3>
+          <p>분석 결과로 A4 한 장짜리 홍보물을 만듭니다. 내용을 직접 고치고 PDF · PPTX · PNG로 저장할 수 있습니다.</p>
+          <button type="button" class="launch" data-page="flyer">홍보물 만들기 →</button>
+        </div>
+        <div class="card flow-card">
+          <span class="flow-num">STEP 3</span>
+          <h3>학술교육 · 영업화법예시</h3>
+          <p>교육자료(홍보물·화법지)를 한 곳에 모아 보고, 원장님 상담 교육용 <strong>영업화법예시</strong>를 5단계 시간대 흐름으로 만들어 이미지·PDF로 추출합니다.</p>
+          <button type="button" class="launch" data-page="training">학술교육 열기 →</button>
+        </div>
+        <div class="card flow-card">
+          <span class="flow-num">STEP 4</span>
+          <h3>제안서 작성</h3>
+          <p>거래처 상황과 승인 단가 조건을 입력하면 근거·검체·운영 정보를 반영한 제안서 초안을 만들고 Word/PDF로 저장합니다.</p>
+          <button type="button" class="launch" data-page="proposal">제안서 작성하기 →</button>
+        </div>
+      </div>
+
+      <div class="card guide-strip mt-16">
+        <div>
+          <h3>사용 안내 · 보안</h3>
+          <p>파일이 외부 서버로 전송되지 않는 구조, 저장 방식, 실제 사용 시 반드시 확인할 사항을 정리했습니다.</p>
+        </div>
+        <button type="button" class="btn secondary" data-page="guide">안내 보기 →</button>
+      </div>
+    </section>
+
+    <!-- ================= 자료 첨부·분석 ================= -->
+    <section class="page" id="materials">
+      <h2>자료 첨부 · 분석</h2>
+      <p class="subtitle">PDF 또는 PPTX를 선택하면 브라우저 안에서 내용을 읽어 홍보물·제안서 재료로 정리합니다.</p>
+
+      <div class="card">
+        <h3>1. 파일 선택</h3>
+        <label class="drop-zone" id="dropZone" for="materialFiles">
+          <strong>여기로 PDF · PPTX 파일을 끌어다 놓거나 클릭해서 선택하세요</strong>
+          <span class="meta">여러 개 선택 가능 · 파일 1개당 50MB 이하 권장 · .pdf / .pptx</span>
+          <input id="materialFiles" type="file" multiple
+                 accept=".pdf,.pptx,application/pdf,application/vnd.openxmlformats-officedocument.presentationml.presentation">
+        </label>
+
+        <div class="opt-row">
+          <label class="check"><input type="checkbox" id="optImages" checked> 이미지도 추출 (홍보물에 사용)</label>
+          <label class="check"><input type="checkbox" id="optFontSize" checked> 글자 크기로 제목 판단</label>
+          <label class="check"><input type="checkbox" id="optClean" checked> 머리글·꼬리글 자동 제거</label>
+        </div>
+
+        <div class="toolbar">
+          <button type="button" class="btn" id="btnExtract">자료 읽고 분석하기</button>
+          <button type="button" class="btn secondary" id="btnSample">샘플 자료로 먼저 확인</button>
+          <button type="button" class="btn secondary" id="btnResetMaterials">자료 초기화</button>
+        </div>
+        <p id="extractStatus" class="status" role="status">아직 첨부된 자료가 없습니다.</p>
+        <div class="progress" id="extractProgress" hidden><div class="progress-bar" id="extractProgressBar"></div></div>
+      </div>
+
+      <div class="card mt-16" id="analysisCard" hidden>
+        <h3>2. 분석 결과</h3>
+        <div class="grid grid2">
+          <div>
+            <p class="field-label">추정 제목</p>
+            <p class="value-box" id="anTitle">-</p>
+          </div>
+          <div>
+            <p class="field-label">추정 부제 / 요약</p>
+            <p class="value-box" id="anSubtitle">-</p>
+          </div>
+        </div>
+
+        <p class="field-label mt-12">핵심 문장 후보</p>
+        <ul class="pick-list" id="anKeyPoints"></ul>
+
+        <p class="field-label mt-12">확인된 수치 · 근거</p>
+        <div class="chip-row" id="anMetrics"></div>
+
+        <p class="field-label mt-12">검사 정보 (자동 추출)</p>
+        <div class="table-wrap">
+          <table class="info-table" id="anInfoTable">
+            <thead><tr><th>항목</th><th>추출 내용</th><th>출처</th></tr></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+
+        <p class="field-label mt-12">적용 대상 후보</p>
+        <div class="chip-row" id="anTargets"></div>
+
+        <div class="toolbar mt-16">
+          <button type="button" class="btn" data-action="build-flyer">이 내용으로 1P 홍보물 만들기 →</button>
+          <button type="button" class="btn secondary" data-action="build-proposal">이 내용으로 제안서 만들기 →</button>
+        </div>
+      </div>
+
+      <div class="card mt-16" id="textCard" hidden>
+        <h3>3. 추출 원문 (직접 수정 가능)</h3>
+        <p class="meta">자동 분류가 어긋난 문장은 여기서 고칠 수 있습니다. 수정 후 ‘내용 다시 분석’을 누르면 결과에 반영됩니다.</p>
+        <textarea id="rawText" class="mono" rows="14" spellcheck="false"></textarea>
+        <div class="toolbar">
+          <button type="button" class="btn secondary" id="btnReanalyze">내용 다시 분석</button>
+          <button type="button" class="btn secondary" id="btnDownloadText">텍스트 파일로 저장</button>
+        </div>
+      </div>
+
+      <div class="card mt-16" id="imageCard" hidden>
+        <h3>4. 추출 이미지</h3>
+        <p class="meta">홍보물에 넣을 이미지를 고르세요. 필요 없는 이미지는 삭제할 수 있습니다.</p>
+        <div class="gallery" id="imageGallery"></div>
+      </div>
+    </section>
+
+    <!-- ================= 1P 홍보물 ================= -->
+    <section class="page" id="flyer">
+      <h2>1페이지 홍보물 생성</h2>
+      <p class="subtitle">실제 재단 1P 홍보물처럼 핵심 특징·연구 근거·검사코드·검체·방법·일정·보험정보·수가·참고문헌을 자료에서 추출해 한 장에 구성합니다. 이미지와 문구를 수정한 뒤 PDF · PPTX · PNG로 저장할 수 있습니다.</p>
+
+      <div class="split">
+        <div class="panel">
+          <div class="toolbar">
+            <button type="button" class="btn" data-action="fill-from-analysis">자료에서 자동 채우기</button>
+            <button type="button" class="btn secondary" data-action="fit-flyer">자동 맞춤(1장 맞추기)</button>
+            <button type="button" class="btn secondary" data-action="reset-flyer">초기화</button>
+          </div>
+          <div id="flyerEditor"></div>
+        </div>
+
+        <div class="panel preview-panel">
+          <div class="toolbar sticky-tools">
+            <button type="button" class="btn" data-action="print-flyer">PDF 저장 / 인쇄</button>
+            <button type="button" class="btn secondary" data-action="export-pptx">PPTX 저장</button>
+            <button type="button" class="btn secondary" data-action="export-png">PNG 저장</button>
+            <button type="button" class="btn secondary" data-action="export-imagepdf">이미지 PDF</button>
+            <button type="button" class="btn secondary" data-action="copy-flyer-text">내용 복사</button>
+          </div>
+          <p class="meta" id="exportStatus" role="status">미리보기는 실제 인쇄 비율(A4)입니다.</p>
+          <div class="flyer-scaler" id="flyerScaler">
+            <div id="printRoot"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 학술교육 ================= -->
+    <section class="page" id="training">
+      <h2>학술교육</h2>
+      <p class="subtitle">교육자료(홍보물 · PPT · 화법지)를 모아 보고, 원장님 상담 교육용 <strong>영업화법예시</strong>를 A4 한 장으로 만들어 이미지 · PDF로 추출합니다.</p>
+
+      <div class="subnav" role="tablist" aria-label="학술교육 하위 메뉴">
+        <button type="button" class="subnav-btn active" role="tab" aria-selected="true" data-subtab="training-docs">교육자료실</button>
+        <button type="button" class="subnav-btn" role="tab" aria-selected="false" data-subtab="training-script">영업화법예시 (5분 화법)</button>
+      </div>
+
+      <div class="subtab active" id="training-docs" role="tabpanel">
+        <div class="card">
+          <h3>교육자료 목록</h3>
+          <p class="meta">자료 첨부·분석에서 만든 산출물이 여기에 모입니다. 카드의 버튼으로 바로 이미지 · PPT · PDF로 저장할 수 있습니다.</p>
+          <div class="doc-list mt-12" id="trainingDocList"></div>
+        </div>
+
+        <div class="card mt-16">
+          <h3>교육자료 준비</h3>
+          <p>홍보물과 화법지는 <strong>자료 첨부·분석</strong>에서 자료를 한 번 읽으면 함께 만들어집니다. 아직 자료를 읽지 않았다면 먼저 진행해 주세요.</p>
+          <div class="toolbar">
+            <button type="button" class="btn" data-page="materials">자료 첨부·분석으로 가기 →</button>
+            <button type="button" class="btn secondary" data-action="build-training">영업화법예시 만들기 →</button>
+          </div>
+          <p class="status" id="trainingStatus" role="status"></p>
+        </div>
+      </div>
+
+      <div class="subtab" id="training-script" role="tabpanel">
+        <div class="split">
+          <div class="panel">
+            <div class="toolbar">
+              <button type="button" class="btn" data-action="fill-training">자료에서 자동 채우기</button>
+              <button type="button" class="btn secondary" data-action="fit-training">자동 맞춤(1장 맞추기)</button>
+              <button type="button" class="btn secondary" data-action="reset-training">초기화</button>
+            </div>
+            <div id="trainingEditor"></div>
+          </div>
+
+          <div class="panel preview-panel">
+            <div class="toolbar sticky-tools">
+              <button type="button" class="btn" data-action="export-training-png">이미지(PNG)로 추출</button>
+              <button type="button" class="btn secondary" data-action="export-training-imagepdf">이미지 PDF</button>
+              <button type="button" class="btn secondary" data-action="print-training">PDF 저장 / 인쇄</button>
+              <button type="button" class="btn secondary" data-action="copy-training-text">내용 복사</button>
+            </div>
+            <p class="meta" id="trainingPreviewStatus" role="status">미리보기는 실제 인쇄 비율(A4)입니다. ‘이미지(PNG)로 추출’을 누르면 교육 배포용 이미지가 저장됩니다.</p>
+            <div class="flyer-scaler sheet-scaler" id="trainingScaler">
+              <div id="trainingRoot"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 제안서 ================= -->
+    <section class="page" id="proposal">
+      <h2>제안서 작성</h2>
+      <p class="subtitle">신규 개원·거래 전환·기존 거래처 지원을 3페이지 영업 제안서로 구성합니다. 첨부 검사자료의 이미지와 확인된 정보는 해당 영역에 반영하고, 생성된 문서는 수정 가능한 초안으로 저장할 수 있습니다.</p>
+
+      <div class="card">
+        <h3>1. 거래처 정보</h3>
+        <div class="grid grid2">
+          <div><label for="pClinic">병원·의원명</label><input id="pClinic" placeholder="예: ○○내과의원"></div>
+          <div><label for="pManager">담당자</label><input id="pManager" placeholder="예: 원장님"></div>
+          <div>
+            <label for="pType">제안 유형</label>
+            <select id="pType">
+              <option value="opening">신규 개원 제안</option>
+              <option value="conversion">거래처 전환 제안</option>
+              <option value="support">거래처 지원 제안</option>
+              <option value="renewal">기존 거래처 관리</option>
+            </select>
+          </div>
+          <div><label for="pDate">작성일</label><input id="pDate" type="date"></div>
+        </div>
+        <label for="pSituation">거래처 현황 및 고민</label>
+        <textarea id="pSituation" placeholder="예: 개원 예정일, 현재 수탁사, 수거 시간·결과 확인·업무 대응에서 개선이 필요한 부분"></textarea>
+        <label for="pNeeds">중점 제안 내용</label>
+        <textarea id="pNeeds" placeholder="예: 개원 초기 운영 정착, 타사 의뢰 단계적 전환, 수거·결과 확인·현장 대응 개선"></textarea>
+        <label for="pAction">후속 조치 및 일정</label>
+        <textarea id="pAction" placeholder="예: 다음 방문에서 운영 조건 확인, 전환 범위 합의, 내부 확인 후 실행 일정 확정"></textarea>
+      </div>
+
+      <div class="card mt-16">
+        <h3>2. 제안 단가 및 적용 조건</h3>
+        <p class="meta">재단에서 승인된 기준 단가와 할인율만 입력해 주세요. 승인되지 않은 조건은 확정 제안으로 사용하지 않습니다.</p>
+        <div class="grid grid3">
+          <div><label for="pOfferItem">제안 범위·지원 항목</label><input id="pOfferItem" placeholder="예: 개원 준비 지원, 거래 전환 및 초기 운영 안정화"></div>
+          <div><label for="pBasePrice">기준 단가 (원)</label><input id="pBasePrice" type="number" min="0" step="1" placeholder="승인 기준 단가"></div>
+          <div><label for="pDiscountRate">승인 할인율 (%)</label><input id="pDiscountRate" type="number" min="0" max="100" step="0.1" placeholder="승인된 할인율"></div>
+          <div><label>할인 금액</label><div class="value-box" id="pDiscountAmountDisplay">기준 단가와 할인율 입력 후 계산</div></div>
+          <div><label>계산된 제안 단가</label><div class="value-box" id="pProposedPriceDisplay">기준 단가와 할인율 입력 후 계산</div></div>
+          <div><label for="pOfferPeriod">적용 기간</label><input id="pOfferPeriod" placeholder="예: 내부 승인 후 계약기간 적용"></div>
+        </div>
+        <label for="pOfferConditions">할인·계약 적용 조건</label>
+        <textarea id="pOfferConditions" placeholder="예: 대상 검사, 월 의뢰량, 계약 기간, 할인 적용 범위 등"></textarea>
+        <label for="pSupport">지원·도입 계획</label>
+        <textarea id="pSupport" placeholder="예: 수거·결과 확인 조건 점검, 직원 안내, 담당자 연락 체계 및 초기 운영 점검"></textarea>
+        <label class="check mt-12"><input type="checkbox" id="pIncludeFlyer" checked> 제안서 요약(복사·Word)에 1P 홍보물 핵심 요약을 포함</label>
+        <label class="check mt-12"><input type="checkbox" id="pIncludeImage" checked> 첨부 자료에서 추출한 이미지를 제안서에 포함</label>
+      </div>
+
+      <div class="toolbar mt-16">
+        <button type="button" class="btn" data-action="gen-proposal">제안서 초안 만들기</button>
+        <button type="button" class="btn" data-action="export-proposal-pdf">PDF 저장 (A4 · 3페이지)</button>
+        <button type="button" class="btn secondary" data-action="print-proposal">인쇄 / PDF로 저장</button>
+        <button type="button" class="btn secondary" data-action="download-doc">Word 저장</button>
+        <button type="button" class="btn secondary" data-action="copy-proposal">내용 복사</button>
+      </div>
+      <p class="status" id="proposalStatus" role="status"></p>
+      <div class="card mt-12" id="proposalPreviewCard" hidden>
+        <h3>A4 제안서 미리보기</h3>
+        <p class="meta"><strong>A4 3페이지</strong> 구성: 제안 요약, 운영 가치·첨부자료 핵심, 실행계획·협의 조건 순서입니다.</p>
+        <div id="proposalPreview" class="proposal-scaler"></div>
+      </div>
+      <p class="meta">실제 검사 가능 여부, 가격 및 계약 조건은 내부 확인 후 사용해 주세요.</p>
+    </section>
+
+    <!-- ================= 신규개원·채용정보 ================= -->
+    <section class="page" id="jobs">
+      <h2>신규개원·채용정보</h2>
+      <p class="subtitle">김해 · 부산 강서구 · 사하구 · 사상구의 기존 자동수집 공고를 확인합니다.</p>
+      <div class="grid grid2">
+        <div class="card">
+          <h3>수집 현황</h3>
+          <div class="stat" id="jobCount">-</div>
+          <p class="meta" id="jobUpdated">업데이트 날짜 확인 중</p>
+        </div>
+        <div class="card">
+          <h3>공고 찾기</h3>
+          <label for="jobArea">담당 지역</label>
+          <select id="jobArea">
+            <option value="">전체 지역</option><option value="김해">김해시</option>
+            <option value="강서">부산 강서구</option><option value="사하">부산 사하구</option>
+            <option value="사상">부산 사상구</option>
+          </select>
+          <label for="jobSearch">병원명·공고 키워드</label>
+          <input id="jobSearch" type="search" placeholder="예: 개원, 간호사, 병원명">
+          <div class="toolbar"><button type="button" class="btn" id="jobReload">공고 새로고침</button></div>
+        </div>
+      </div>
+      <p class="meta" id="jobStatus" role="status">공고 데이터를 불러오는 중입니다.</p>
+      <div id="jobList" class="job-list"></div>
+    </section>
+
+    <!-- ================= 숙성항목: 거래처 월별 검사 항목 비교 ================= -->
+    <section class="page" id="aging">
+      <h2>숙성항목 · 거래처 월별 항목 비교</h2>
+      <p class="subtitle">월별 자료끼리 비교하거나, 전년 1년치 자료와 올해 한 달 자료를 비교해 신규 등장 검사 항목을 집계합니다.</p>
+
+      <div class="card">
+        <h3>1. 월별 엑셀 첨부</h3>
+        <p>월별 파일을 2개 이상 선택하세요. <strong>C열=검사명, D열=건수</strong>는 고정으로 읽고, 파일명에 <strong>2026-08</strong>, <strong>2026년 8월</strong> 또는 <strong>2025-01-01 ~ 2025-12-31</strong>처럼 기간이 있으면 자동 인식합니다. 전년 연간 파일과 올해 월간 파일을 함께 넣으면 전년 대비 신규·기존 항목을 집계합니다.</p>
+        <label for="agingFiles">거래처 월별 항목 엑셀 (.xlsx) 또는 CSV</label>
+        <input id="agingFiles" type="file" multiple accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv">
+        <p class="meta mt-8" id="agingFileNames">선택된 파일이 없습니다.</p>
+        <div class="toolbar mt-12">
+          <button type="button" class="btn" id="agingReadButton">엑셀 읽고 비교 준비</button>
+          <button type="button" class="btn secondary" id="agingClearButton">초기화</button>
+        </div>
+        <p class="meta mt-8">파일은 서버로 전송되지 않고 이 브라우저에서만 분석합니다. XLSX 파일은 첫 번째 데이터 시트를 읽습니다. 구형 .xls는 Excel에서 .xlsx로 다시 저장해 주세요.</p>
+      </div>
+
+      <div class="card mt-16" id="agingMappings" hidden></div>
+      <p class="status mt-12" id="agingStatus" role="status">월별 파일을 선택해 주세요.</p>
+
+      <div id="agingResults" hidden>
+        <h3 class="mt-16">3. 월별 비교 요약</h3>
+        <div id="agingSummary"></div>
+        <div class="card mt-16">
+          <h3>월별 전체 현황</h3>
+          <div class="table-wrap" id="agingOverviewTable"></div>
+        </div>
+        <div class="card mt-16">
+          <div class="aging-detail-heading">
+            <div>
+              <h3>거래처별 검사 항목 비교</h3>
+              <p class="meta">상태는 최신 월과 바로 이전 월을 비교합니다. ‘신규’는 최신 월에 처음 확인된 조합, ‘중단’은 이전 월에는 있었으나 최신 월에 없는 조합입니다.</p>
+            </div>
+            <button type="button" class="btn secondary" id="agingExportCsv" disabled>비교 결과 CSV 저장</button>
+          </div>
+          <div class="aging-filters">
+            <div><label for="agingClientFilter">거래처</label><select id="agingClientFilter"><option value="">전체 거래처</option></select></div>
+            <div><label for="agingItemFilter">검사 항목 검색</label><input id="agingItemFilter" type="search" placeholder="검사명 또는 코드"></div>
+            <div><label for="agingStatusFilter">변화 상태</label><select id="agingStatusFilter">
+              <option value="">전체 상태</option><option value="신규">신규</option><option value="중단">중단</option>
+              <option value="증가">증가</option><option value="감소">감소</option><option value="유지">유지</option>
+            </select></div>
+          </div>
+          <div class="table-wrap mt-12" id="agingCompareTable"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ================= 사용 안내 ================= -->
+    <section class="page" id="guide">
+      <h2>사용 안내</h2>
+      <p class="subtitle">업무에 바로 쓰기 전에 한 번 확인해 주세요.</p>
+
+      <div class="card">
+        <h3>작업 순서</h3>
+        <ol class="steps">
+          <li><strong>자료 첨부·분석</strong> : 재단에서 받은 PDF · PPTX를 올리고 ‘자료 읽고 분석하기’를 누릅니다.</li>
+          <li><strong>결과 확인</strong> : 추정 제목, 핵심 문장, 수치, 검사 정보 표를 확인하고 필요하면 원문을 직접 고쳐 다시 분석합니다.</li>
+          <li><strong>1P 홍보물</strong> : ‘자료에서 자동 채우기’로 초안을 만들고 문구를 다듬은 뒤 PDF · PPTX · PNG로 저장합니다.</li>
+          <li><strong>학술교육</strong> : 교육자료실에서 산출물을 모아 보고, ‘영업화법예시’에서 5단계(0:00~5:00) 시간대별 교육용 화법지를 만들어 <strong>이미지(PNG)</strong>·PDF로 추출합니다.</li>
+          <li><strong>제안서</strong> : 승인 단가와 할인율을 입력하고 초안을 만든 뒤 Word 또는 PDF로 저장합니다.</li>
+          <li><strong>숙성항목</strong> : 거래처별 월간 항목 엑셀을 2개월 이상 첨부해 신규·중단 검사와 건수 증감을 비교합니다.</li>
+        </ol>
+      </div>
+
+      <div class="card mt-16">
+        <h3>파일 처리와 저장 방식</h3>
+        <ul class="bullets">
+          <li>PDF · PPTX 파일은 <strong>브라우저 안에서만</strong> 열어 읽습니다. 서버 업로드나 외부 전송이 없습니다.</li>
+          <li>추출한 텍스트, 이미지, 홍보물·교육화법 초안은 이 브라우저(로컬 저장소)에 보관됩니다. 브라우저 데이터를 지우거나 다른 기기를 쓰면 사라지므로, 완성본은 파일로 저장해 두세요.</li>
+          <li>이미지 추출은 용량이 큽니다. 많이 넣으면 분석이 느려지므로 필요한 자료만 첨부하는 편이 좋습니다.</li>
+        </ul>
+      </div>
+
+      <div class="card mt-16">
+        <h3>꼭 확인할 사항</h3>
+        <ul class="bullets">
+          <li>자동 추출은 <strong>초안</strong>입니다. 검사 항목, 검체 조건, 검사 일정, 검사코드, 수가·급여 기준은 원문과 최신 공지를 반드시 대조하세요.</li>
+          <li>교육 화법지의 근거 수치는 <strong>첨부 자료에 적힌 값만</strong> 사용합니다. 자료에 없는 효능·조건·비교 우위는 임의로 만들지 마세요.</li>
+          <li>원장님 상담에서는 <strong>완치 · 100% · 부작용 없음 · 최고 · 유일</strong> 같은 단정 표현을 쓰지 않습니다. 진단과 치료 결정은 담당 의료진의 판단에 따릅니다.</li>
+          <li>첨부 자료에 없는 할인율·계약 조건·검사 효과는 임의로 만들지 않습니다. 승인된 조건만 입력해 주세요.</li>
+          <li>환자 개인정보가 담긴 파일은 첨부하지 마세요. 홍보물·교육화법에는 개인정보·내부 단가표를 넣지 않도록 확인하세요.</li>
+          <li>구형 .ppt(파워포인트 97-2003) 형식은 읽을 수 없습니다. PPTX로 저장한 뒤 첨부해 주세요.</li>
+        </ul>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-foot">
+    <p>부산3지점 통합 영업 대시보드 · 파일 처리는 브라우저 내부에서만 수행 · 생성 문서는 검토용 초안입니다</p>
+  </footer>
+
+</div>
+
+<div id="printStage" aria-hidden="true"></div>
+
+
+<script>
+/* 독립 메뉴 전환: 모듈 오류와 관계없이 화면 이동 */
+(function () {
+  function openPage(name) {
+    var target = document.getElementById(name);
+    if (!target || !target.classList.contains("page")) return;
+    document.querySelectorAll(".page").forEach(function (page) {
+      page.classList.toggle("active", page.id === name);
+    });
+    document.querySelectorAll(".navbtn").forEach(function (button) {
+      button.classList.toggle("active", button.dataset.page === name);
+    });
+    if (location.hash !== "#" + name) history.replaceState(null, "", "#" + name);
+    window.scrollTo(0, 0);
+  }
+  document.addEventListener("click", function (event) {
+    var button = event.target.closest("[data-page]");
+    if (!button) return;
+    var name = button.dataset.page;
+    if (!name || !document.getElementById(name)) return;
+    event.preventDefault();
+    openPage(name);
+  }, true);
+  window.addEventListener("hashchange", function () {
+    openPage(location.hash.slice(1));
+  });
+  if (location.hash) {
+    document.addEventListener("DOMContentLoaded", function () {
+      openPage(location.hash.slice(1));
+    });
+  }
+})();
+</script>
+<script type="module" src="main.js?v=20261028m"></script>
+</body>
+</html>

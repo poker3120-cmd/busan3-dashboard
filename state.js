@@ -26,6 +26,7 @@ export function emptyAnalysis() {
     infoRows: [],
     targets: [],
     sources: [],
+    references: [],
     charCount: 0,
     generatedAt: "",
   };
@@ -143,12 +144,13 @@ export function defaultFlyer() {
     ],
     infoRows: [],
     targets: [],
+    references: [],
     note: "",
     imageId: null,
     imageCaption: "",
     footerOrg: "재단법인 씨젠의료재단 부산3지점",
-    footerContact: "담당자 · 연락처를 입력하세요",
-    footerNote: "본 자료는 첨부 자료를 바탕으로 작성한 안내용 초안입니다.\n검사 가능 여부·수가·급여 기준은 내부 확인 후 안내합니다.",
+    footerContact: "검사문의 1566-6500 · 담당자 연락처 추가",
+    footerNote: "검사 적용 및 청구 시 해당 검사 안내와 최신 급여기준을 확인해 주세요.",
   };
 }
 

@@ -9,16 +9,18 @@ import {
 
 import { state, emptyAnalysis, saveAnalysis, loadAnalysis, saveFlyer, loadFlyer,
   saveTraining, loadTraining, saveProposal, loadProposal,
-  clearMaterials, resetFlyer, resetTraining, defaultFlyer, defaultTraining } from "./state.js";
+  clearMaterials, resetFlyer, resetTraining, defaultFlyer, defaultTraining } from "./state.js?v=20261028b";
 
-import { extractFiles } from "./extract.js";
-import { analyze } from "./analyze.js";
+import { extractFiles } from "./extract.js?v=20261027e";
+import { createMedicalIllustration } from "./medical-illustration.js?v=20261028c";
+import { wireAging } from "./aging.js?v=20261027r";
+import { analyze } from "./analyze.js?v=20261028c";
 import { sampleUnits, sampleFileReport } from "./demo.js";
 
 import {
   normalizeFlyer, renderFlyerHtml, renderFlyerEditor,
   findBestDense, findBestFit, measureFlyerHeight, flyerToPlainText,
-} from "./flyer.js";
+} from "./flyer.js?v=20261028d";
 
 import {
   normalizeTraining, renderTrainingHtml, renderTrainingEditor,
@@ -27,7 +29,7 @@ import {
 
 import {
   renderProposalHtml, proposalToPlainText,
-} from "./proposal.js";
+} from "./proposal.js?v=20261028f";
 
 import {
   fitScaler, printFlyer, printHtml, exportFlyerPng, exportFlyerImagePdf,
@@ -61,14 +63,88 @@ function getImageById(id) {
   return state.images.find((img) => img.id === id) || null;
 }
 
+/* 검사 주제에 맞는 개념도를 기본 히어로로 사용하고, 첨부자료 속 도식·그래프는 보조 이미지로 보존합니다. */
+function getBestFlyerImage() {
+  // 제목과 파일명을 먼저 판정해, 자료 묶음의 다른 검사 키워드가 이미지를 덮어쓰지 않게 합니다.
+  const candidateTexts = [
+    state.analysis?.title || "",
+    ...(state.files || []).map((file) => file.name || ""),
+    state.analysis?.subtitle || "",
+  ].filter((value) => String(value).trim());
+
+  let illustration = null;
+  for (const sourceText of candidateTexts) {
+    const candidate = createMedicalIllustration(sourceText);
+    if (candidate && candidate.topicKey !== "clinical") {
+      illustration = candidate;
+      break;
+    }
+  }
+
+  // 제목과 파일명으로 주제를 찾지 못했을 때만 본문 전체를 확인합니다.
+  if (!illustration) {
+    illustration = createMedicalIllustration(String(state.rawText || "").slice(0, 12000));
+  }
+
+  // 주제별 개념도가 전혀 맞지 않으면 눈·세포처럼 보이는 추상 원형 그림 대신
+  // 검사 결과지와 검체 튜브 형태의 중립적인 검사 안내 그래픽을 사용합니다.
+  if (!illustration || illustration.topicKey === "clinical") {
+    illustration = createMedicalIllustration("");
+  }
+
+  const existing = state.images.find((img) => img.id === illustration.id);
+  if (existing) return existing;
+  state.images.push(illustration);
+  return illustration;
+}
+
 function refreshFlyerImage() {
   const f = state.flyer || defaultFlyer();
-  flyerImage = getImageById(f.imageId);
-  if (f.imageId && !flyerImage) {
-    // 저장 후 이미지가 사라진 경우 (이미지는 세션 전용)
-    f.imageId = null;
-    flyerImage = null;
+  let selected = getImageById(f.imageId);
+
+  // 추출 이미지는 새로고침 후 세션에서 사라질 수 있습니다.
+  // 선택된 이미지가 없으면 현재 검사 주제의 자동 생성 개념도를 다시 연결합니다.
+  if (!selected) {
+    const generated = getBestFlyerImage();
+    if (generated) {
+      selected = generated;
+      f.imageId = generated.id;
+      f.imageCaption = truncate(generated.name || "", 40);
+      if (state.flyer) saveFlyer();
+    }
   }
+  if (!selected) {
+    flyerImage = null;
+    return;
+  }
+
+  const likelyBrandAsset = (img) =>
+    /(?:^|[/_-])(?:logo|brand|seegene|ci)(?:[/_.-]|$)/i.test(String(img.name || "")) ||
+    /(?:^|[/_-])(?:logo|brand|seegene|ci)(?:[/_.-]|$)/i.test(String(img.source || ""));
+
+  const candidates = state.images.filter((img) => {
+    if (!img || img.id === selected.id || img.fullPage) return false;
+    if (likelyBrandAsset(img)) return false;
+    if (img.width > 0 && img.height > 0) {
+      const ratio = img.width / img.height;
+      if (ratio > 2.35 || ratio < 0.42) return false;
+      if (img.width * img.height < 36000) return false;
+    }
+    return true;
+  });
+
+  // PPTX의 image1.*는 표지 로고인 경우가 많아, 대안이 충분하면 뒤쪽 도식을 우선합니다.
+  const mediaNamed = candidates.filter((img) => !/^image1\.(png|jpe?g|gif|webp)$/i.test(String(img.name || "")));
+  const ordered = mediaNamed.length ? mediaNamed : candidates;
+  const extraImages = ordered.slice(0, 2).map((img) => ({
+    dataUrl: img.dataUrl,
+    name: img.name || "첨부 자료 이미지",
+    source: img.source || "",
+    width: img.width || 0,
+    height: img.height || 0,
+  }));
+
+  flyerImage = { ...selected, extraImages };
 }
 
 function setStatus(el, message, kind = "") {
@@ -89,6 +165,9 @@ function showPage(name) {
   }
   if (name === "materials") {
     renderAnalysis();
+  }
+  if (name === "jobs") {
+    loadClinicJobs();
   }
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
@@ -250,6 +329,45 @@ function parseRawTextToUnits(raw) {
 }
 
 /** 분석 결과를 홍보물 초안으로 변환합니다. */
+function splitFlyerPoint(value, index) {
+  const text = String(value || "").replace(/\s+/g, " ").trim();
+  if (!text) return { icon: String(index + 1), title: "", desc: "" };
+
+  const colon = text.match(/^(.{2,32}?)\s*[:：]\s*(.{4,})$/);
+  if (colon) {
+    return {
+      icon: String(index + 1),
+      title: truncate(colon[1].trim(), 32),
+      desc: truncate(colon[2].trim(), 105),
+    };
+  }
+
+  const clause = text.match(/^(.{8,38}?)[,，;；—–]\s*(.{8,})$/);
+  if (clause) {
+    return {
+      icon: String(index + 1),
+      title: truncate(clause[1].trim(), 34),
+      desc: truncate(clause[2].trim(), 105),
+    };
+  }
+
+  if (text.length <= 38) {
+    return { icon: String(index + 1), title: text, desc: "" };
+  }
+
+  const target = Math.min(31, Math.max(20, Math.floor(text.length * 0.42)));
+  let splitAt = text.indexOf(" ", target);
+  if (splitAt < 16 || splitAt > 42) splitAt = text.lastIndexOf(" ", target);
+  if (splitAt < 16) splitAt = 30;
+
+  return {
+    icon: String(index + 1),
+    title: truncate(text.slice(0, splitAt).trim(), 36),
+    desc: truncate(text.slice(splitAt).trim(), 105),
+  };
+}
+
+/** 분석 자료를 회사 배포형 검사 안내 1P에 맞는 밀도와 순서로 재구성합니다. */
 function buildFlyerFromAnalysis() {
   const a = state.analysis || emptyAnalysis();
   const f = defaultFlyer();
@@ -258,41 +376,81 @@ function buildFlyerFromAnalysis() {
   f.subtitle = a.subtitle || "";
   f.kicker = "검사 안내";
 
-  const metrics = a.metrics.slice(0, 3).map((m) => ({
-    value: m.value,
-    label: m.label,
-  }));
-  while (metrics.length < 3) metrics.push({ value: "", label: "" });
+  // 실제 자료에 기재된 연구·성능 수치만 강조 지표로 사용합니다.
+  // 코드·수가·본인부담 등 운영정보는 아래 검사 정보 표에 배치합니다.
+  const metricRank = ["AUC", "민감도", "특이도", "정확도", "양성일치율", "음성일치율", "검출률"];
+  const metrics = (a.metrics || [])
+    .filter((m) => m && String(m.value || "").trim() && !/코드|수가|부담|일정|결과 보고/i.test(String(m.label || "")))
+    .sort((left, right) => {
+      const l = metricRank.findIndex((label) => String(left.label || "").includes(label));
+      const r = metricRank.findIndex((label) => String(right.label || "").includes(label));
+      return (l < 0 ? 99 : l) - (r < 0 ? 99 : r);
+    })
+    .slice(0, 4)
+    .map((m) => ({ value: String(m.value), label: String(m.label || "자료 수치") }));
   f.metrics = metrics;
 
-  const points = a.keyPoints.slice(0, 3).map((p, i) => {
-    const [head, ...rest] = String(p.text).split(/[:：]/);
-    const hasColon = rest.length > 0 && head.length <= 22;
-    return {
-      icon: String(i + 1),
-      title: truncate(hasColon ? head : p.text, hasColon ? 40 : 46),
-      desc: hasColon ? truncate(rest.join(":").trim(), 90) : "",
-    };
-  });
-  if (!points.length) {
-    points.push({ icon: "1", title: "", desc: "" });
+  // 한 문장짜리 항목도 제목과 설명으로 분리합니다.
+  f.points = (a.keyPoints || [])
+    .filter((point) => point && String(point.text || "").trim())
+    .slice(0, 4)
+    .map((point, index) => splitFlyerPoint(point.text, index));
+
+  const normalizeField = (value) => String(value || "")
+    .replace(/[\s·/()[\]:：_-]/g, "")
+    .toLowerCase();
+  const priority = [
+    /^(검사코드|검사코드번호|보험코드|edicode|edi코드)/,
+    /^(검사명|항목명|검사항목)/,
+    /^(검체|시료|검체종류)/,
+    /^(검사방법|방법|분석법|측정방법)/,
+    /^(검사일정|검사일|시행일|운영일)/,
+    /^(보험정보|보험|급여|수가정보|수가|검사수가|본인부담)/,
+    /^(소요시간|결과보고|결과통보|검사결과)/,
+    /^(보관|유의사항|의뢰방법)/,
+  ];
+  const rawRows = (a.infoRows || [])
+    .filter((row) => row && String(row.field || "").trim() && String(row.value || "").trim())
+    .map((row) => ({ field: String(row.field).trim(), value: String(row.value).trim() }));
+  const seenFields = new Set();
+  const rows = rawRows
+    .filter((row) => {
+      const key = normalizeField(row.field);
+      if (!key || seenFields.has(key)) return false;
+      seenFields.add(key);
+      return true;
+    })
+    .sort((left, right) => {
+      const score = (row) => {
+        const field = normalizeField(row.field);
+        const index = priority.findIndex((pattern) => pattern.test(field));
+        return index < 0 ? priority.length : index;
+      };
+      return score(left) - score(right);
+    });
+
+  // 제목이 검사명으로 확인되는 경우 보조 행으로 추가합니다.
+  if (f.title && !rows.some((row) => /검사명|항목명|검사항목/.test(normalizeField(row.field)))) {
+    rows.unshift({ field: "검사명", value: f.title });
   }
-  f.points = points;
+  f.infoRows = rows.slice(0, 7);
+  f.targets = (a.targets || []).slice(0, 6);
 
-  f.infoRows = a.infoRows.map((r) => ({ field: r.field, value: r.value }));
-  f.targets = a.targets.slice();
+  const usedInPoints = f.points.map((point) => point.title + " " + point.desc);
+  const noteCandidate = (a.keyPoints || [])
+    .map((point) => String(point && point.text || "").trim())
+    .find((text) => text && !usedInPoints.some((used) => used.includes(text.slice(0, 18))));
+  f.note = truncate(noteCandidate || "", 150);
 
-  // 안내 문구는 홍보물에 이미 들어간 포인트(0~2)와 겹치지 않는 내용으로 채웁니다.
-  // (같은 문장이 포인트와 안내 문구에 두 번 나오면 지저분해집니다.)
-  const usedInPoints = a.keyPoints.slice(0, 3).map((p) => p.text);
-  const noteCandidate = a.keyPoints.slice(3).map((p) => p.text)
-    .find((text) => text && !usedInPoints.some((used) => used.includes(text.slice(0, 14))));
-  f.note = truncate(noteCandidate || "", 120);
+  // 참고문헌은 분석기가 추출한 원문만 사용합니다.
+  f.references = (a.references || [])
+    .map((reference) => typeof reference === "string" ? reference : String(reference && reference.text || "").trim())
+    .filter(Boolean)
+    .slice(0, 4);
 
-  // 전체 페이지를 그린 이미지는 원본 복제가 되므로 자동 선택하지 않습니다.
-  const usable = state.images.filter((img) => !img.fullPage);
-  f.imageId = usable.length ? usable[0].id : null;
-  f.imageCaption = usable.length ? truncate(usable[0].name || "", 40) : "";
+  const flyerImageChoice = getBestFlyerImage();
+  f.imageId = flyerImageChoice ? flyerImageChoice.id : null;
+  f.imageCaption = flyerImageChoice ? truncate(flyerImageChoice.name || "", 40) : "";
 
   state.flyer = normalizeFlyer(f);
   saveFlyer();
@@ -349,7 +507,11 @@ function syncEditorToState(target) {
   const f = state.flyer;
   const singular = target.dataset.flyer;
   if (singular === "targetsText") {
-    f.targets = target.value.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean);
+    f.targets = target.value.split(/[,，\n]/).map((t) => t.trim()).filter(Boolean).slice(0, 6);
+    return true;
+  }
+  if (singular === "referencesText") {
+    f.references = target.value.split(/\r?\n/).map((t) => t.trim()).filter(Boolean).slice(0, 4);
     return true;
   }
   if (singular) {
@@ -471,10 +633,76 @@ function renderProposalPreview() {
   requestAnimationFrame(fitProposalScaler);
 }
 
+/* ---------- 신규개원·채용정보 ---------- */
+let clinicJobs = [];
+let clinicJobsLoaded = false;
+
+function jobRegionMatches(item, area) {
+  if (!area) return true;
+  const region = String(item.region || "");
+  const title = String(item.title || "");
+  const text = region + " " + title;
+  if (area === "김해") return /김해/.test(text);
+  if (area === "강서") return /강서/.test(text);
+  if (area === "사하") return /사하/.test(text);
+  if (area === "사상") return /사상/.test(text);
+  return true;
+}
+
+function renderClinicJobs() {
+  const list = $("jobList");
+  if (!list) return;
+  const area = $("jobArea")?.value || "";
+  const query = ($("jobSearch")?.value || "").trim().toLowerCase();
+  const filtered = clinicJobs.filter((item) =>
+    jobRegionMatches(item, area) &&
+    (!query || (String(item.title || "") + " " + String(item.region || "") + " " + String(item.source || "")).toLowerCase().includes(query))
+  );
+  $("jobCount").textContent = String(filtered.length);
+  if (!filtered.length) {
+    list.innerHTML = '<div class="card"><h3>표시할 공고가 없습니다.</h3><p>지역 필터를 전체로 바꾸거나 다른 검색어를 입력해 주세요. 수집 결과가 없는 경우 다음 자동 업데이트를 기다려 주세요.</p></div>';
+    return;
+  }
+  list.innerHTML = filtered.map((item) => {
+    const title = escapeHtml(item.title || "제목 없음");
+    const region = escapeHtml(item.region || "지역 확인 필요");
+    const source = escapeHtml(item.source || "출처 미상");
+    const date = escapeHtml(item.date || "게시일 확인 필요");
+    const link = String(item.link || "");
+    const safeLink = /^https?:\/\//i.test(link) ? link : "";
+    return '<article class="card job-card"><div class="job-card-top"><span class="job-region">' + region + '</span><span class="job-date">' + date + '</span></div><h3>' + title + '</h3><p class="meta">출처: ' + source + '</p>' + (safeLink ? '<a class="btn job-link" href="' + escapeHtml(safeLink) + '" target="_blank" rel="noopener noreferrer">공고·기사 열기 ↗</a>' : '') + '</article>';
+  }).join("");
+}
+
+async function loadClinicJobs() {
+  const status = $("jobStatus");
+  if (!status) return;
+  status.textContent = "공고 데이터를 불러오는 중입니다.";
+  try {
+    const response = await fetch("../results.json?ts=" + Date.now(), { cache: "no-store" });
+    if (!response.ok) throw new Error("HTTP " + response.status);
+    const data = await response.json();
+    clinicJobs = Array.isArray(data.results) ? data.results : [];
+    clinicJobsLoaded = true;
+    $("jobUpdated").textContent = "마지막 업데이트: " + String(data.updated_at || "날짜 정보 없음").replace("T", " ").slice(0, 16);
+    status.textContent = "자동수집 결과 " + clinicJobs.length + "건 · 공고를 선택하면 원문이 새 탭에서 열립니다.";
+    renderClinicJobs();
+  } catch (error) {
+    clinicJobsLoaded = false;
+    clinicJobs = [];
+    $("jobUpdated").textContent = "업데이트 날짜를 확인할 수 없습니다.";
+    status.textContent = "공고 데이터를 불러오지 못했습니다. 잠시 후 새로고침해 주세요.";
+    $("jobList").innerHTML = '<div class="card"><h3>데이터 연결을 확인해 주세요.</h3><p>기존 자동수집 결과 파일(results.json)을 읽지 못했습니다.</p></div>';
+  }
+}
+
 /* ---------- 이벤트 배선 ---------- */
 
 function wireNavigation() {
   $$(".navbtn").forEach((btn) => btn.addEventListener("click", () => showPage(btn.dataset.page)));
+  $("jobArea")?.addEventListener("change", renderClinicJobs);
+  $("jobSearch")?.addEventListener("input", renderClinicJobs);
+  $("jobReload")?.addEventListener("click", loadClinicJobs);
   document.addEventListener("click", (event) => {
     const launcher = event.target.closest("[data-page]");
     if (launcher && !launcher.classList.contains("navbtn")) {
@@ -822,7 +1050,7 @@ function wireProposal() {
       saveProposal();
       $("proposalPreviewCard").hidden = false;
       renderProposalPreview();
-      setStatus($("proposalStatus"), "A4 제안서 7페이지를 만들었습니다. 미리보기를 확인해 주세요.", "ok");
+      setStatus($("proposalStatus"), "A4 제안서를 만들었습니다. 미리보기를 확인해 주세요.", "ok");
       return;
     }
 
@@ -1236,6 +1464,7 @@ function boot() {
   wireTraining();
   wireProposal();
   wireProposalPersistence();
+  wireAging();
 
   loadAnalysis();
   loadFlyer();
@@ -1293,14 +1522,18 @@ export function loadExtractedResult(result, options = {}) {
   renderAnalysis();
   renderHomeStats();
 
-  // 이미지를 새로 읽은 경우: 전체 페이지 렌더본(fullPage)은 제외하고 살아있는 이미지로 다시 연결합니다.
+  // 새 자료를 읽은 뒤 기존 홍보물도 새 검사 이미지로 연결합니다.
+  // PDF 전체 페이지 렌더본은 글자 중복 방지를 위해 자동 삽입하지 않습니다.
   if (options.imagesApplied && state.flyer) {
-    const usable = state.images.filter((img) => !img.fullPage);
-    if (!usable.some((img) => img.id === state.flyer.imageId)) {
-      state.flyer.imageId = usable.length ? usable[0].id : null;
-      state.flyer.imageCaption = usable.length ? truncate(usable[0].name || "", 40) : "";
+    const selected = getBestFlyerImage();
+    if (selected && selected.id !== state.flyer.imageId) {
+      state.flyer.imageId = selected.id;
+      state.flyer.imageCaption = truncate(selected.name || "", 40);
       saveFlyer();
     }
+    // 방금 만든 개념도도 자료 화면의 추출 이미지 목록에 즉시 표시합니다.
+    renderImageGallery();
+    renderHomeStats();
   }
 
   return analysis;

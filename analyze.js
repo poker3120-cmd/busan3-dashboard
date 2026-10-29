@@ -29,7 +29,15 @@ export function collectSegments(units) {
     const source = unit.file || "첨부 자료";
     const label = unit.label || "";
     (unit.lines || []).forEach((line) => {
-      const cleaned = cleanLine(line.text);
+      const rawLine = String(line && line.text || "").trim();
+      // 논문 참고문헌은 별도 수집하므로 제목·부제·핵심 문장 후보에는 포함하지 않습니다.
+      const hasCitationYear = /\b(?:19|20)\d{2}\b/.test(rawLine);
+      const citationLine = hasCitationYear && (
+        /\bet\s+al\.?|doi\s*:|doi\.org|https?:\/\//i.test(rawLine) ||
+        /^\s*\d+\s*[.)]\s*[^.]{3,120}\b(?:Clin|J\.?|Gut|Hepatol|Cancer|Med|Proteomics|Diagnostics|Helicobacter|Dis\.?\s*Markers)\b[^.]{0,100}\b(?:19|20)\d{2}\b/i.test(rawLine)
+      );
+      if (citationLine) return;
+      const cleaned = cleanLine(rawLine);
       if (cleaned.length < 4) return;
       if (NOISE_RE.test(cleaned)) return;
 
@@ -114,7 +122,7 @@ const METRIC_PATTERNS = [
   { label: "음성일치율", re: /음성\s*일치율[^0-9]{0,12}(\d{1,3}(?:\.\d+)?)\s*%/i },
   { label: "검출률", re: /검출률[^0-9]{0,12}(\d{1,3}(?:\.\d+)?)\s*%/i },
   { label: "소요시간", re: /(\d{1,3})\s*(?:분|시간)\s*이내|소요\s*(?:시간|기간)[^0-9]{0,10}(\d{1,3})\s*(?:분|시간|일)/i },
-  { label: "검사수가", re: /수가[^0-9]{0,14}(\d[\d,]{3,})\s*원/ },
+  { label: "검사수가", re: /(?:검사\s*수가|수가)\s*(?:[（(]\s*(?:19|20)\d{2}\s*(?:년)?\s*[)）])?[^0-9]{0,14}(\d[\d,]{3,})\s*원/ },
   { label: "본인부담", re: /본인\s*부담[^0-9]{0,14}(\d[\d,]{3,})\s*원/ },
   { label: "검사코드", re: /(?:검사\s*코드|보험\s*코드|EDI\s*코드|코드번호)\s*[:：]?\s*([A-Z]{0,2}\s*\d{3,6}|[A-Z]{2,}\d{2,})/i },
 ];
@@ -203,9 +211,18 @@ function normalizeLabel(value) {
 
 function fieldForLabel(label) {
   const key = normalizeLabel(label);
-  if (!key || key.length > 14) return "";
+  if (!key || key.length > 24) return "";
   const hit = FIELD_ALIASES.find((alias) => alias.keys.some((candidate) => key === candidate || key === normalizeLabel(candidate)));
   if (hit) return hit.field;
+
+  // 재단 1P 홍보물의 표 머리글은 "검사수가(2026)"처럼 연도까지 함께 표시될 수 있습니다.
+  if (/^(?:검사)?수가(?:19|20)\d{2}$/.test(key) || /^(?:검사)?수가/.test(key)) return "수가·급여";
+  if (/^(검사명|검사항목|항목명)/.test(key)) return "검사명";
+  if (/^(보험정보|보험사항)/.test(key)) return "보험정보";
+  if (/^(검사방법|분석방법|측정방법)/.test(key)) return "검사 방법";
+  if (/^(검사일정|검사요일|시행일정)/.test(key)) return "검사 일정";
+  if (/^(검체|검체종류|시료)/.test(key)) return "검체";
+
   // 사전에 없는 짧은 라벨도 항목명으로 인정합니다. (예: 검출 항목)
   if (LABEL_BLOCKLIST.test(key)) return "";
   if (key.length > 10) return "";
@@ -336,6 +353,7 @@ const KEY_SIGNALS = [
 ];
 
 const KEY_PENALTY = [
+  { re: /\bet\s+al\.?|doi\s*:|doi\.org|https?:\/\/|\b(?:19|20)\d{2};\d+\b|^\s*\d+[.)]\s+[A-Z][a-z]+,/i, w: -85 },
   { re: /(주)|(주)$|㈜|대표자|사업자\s*등록/, w: -18 },
   { re: /저작권|무단\s*복제|copyright|all rights reserved/i, w: -40 },
   { re: /주소|전화|팩스|이메일|@|홈페이지|www\./i, w: -20 },
@@ -415,7 +433,9 @@ export function pickKeyPoints(segments, limit = 6, exclude = []) {
 /** 서술형 문장(부제로 어울리는 문장)인지 봅니다. */
 function isSentenceLike(text) {
   if (text.length < 20) return false;
-  // "검체 : 위액 1mL", "임상 활용 : ..." 처럼 라벨로 시작하면 부제로 쓰지 않습니다.
+  // 논문 인용·참고문헌은 부제 후보에서 제외합니다.
+  if (/\bet\s+al\.?|doi\s*:|doi\.org|https?:\/\/|(?:19|20)\d{2};\d+|^\s*\d+[.)]\s+[A-Z][a-z]+,/i.test(text)) return false;
+  // "검체 : 위액 1mL", "임상 활용 : ..."처럼 라벨로 시작하면 부제로 쓰지 않습니다.
   const leadingLabel = text.match(/^(.{1,10}?)\s*[:：]\s*\S/);
   if (leadingLabel) return false;
   return /[다요습니다임됨음함음]\s*[.!?]?$/.test(text) || text.length >= 38;
@@ -441,8 +461,33 @@ export function makeSubtitle(segments, keyPoints, title, exclude = []) {
   const fallback = (keyPoints || [])
     .map((point) => point.text)
     .concat(segments.map((segment) => segment.text))
-    .find((text) => text && !isBlocked(text) && text.length >= 12);
+    .find((text) => text && !isBlocked(text) && text.length >= 12 &&
+      !(/\bet\s+al\.?|doi\s*:|doi\.org|https?:\/\/|(?:19|20)\d{2};\d+|^\s*\d+[.)]\s+[A-Z][a-z]+,/i.test(text)));
   return truncate(fallback || "", 110);
+}
+
+/** 첨부 자료의 문헌 인용을 그대로 보존합니다. 수가·검사일정 같은 숫자 행은 참고문헌으로 취급하지 않습니다. */
+export function extractReferences(units) {
+  const found = [];
+  const seen = new Set();
+  const citationSignal = /et\s+al\.?|doi\s*:|doi\.org|\bPMID\b|\bPubMed\b|\b(?:Clin|J|Gut|Hepatol|Cancer|Med|Proteomics|Diagnostics|Dis\s+Markers)\.?\b|\b(?:19|20)\d{2}\b/i;
+
+  (units || []).forEach((unit) => {
+    (unit.lines || []).forEach((line) => {
+      let text = cleanLine(line && line.text);
+      if (text.length < 28 || text.length > 260) return;
+      if (!/\b(?:19|20)\d{2}\b/.test(text) && !/doi\s*:|doi\.org|\bPMID\b/i.test(text)) return;
+      if (!citationSignal.test(text)) return;
+      if (/검사수가|수가\s*\(|보험정보|검사일정|작성일|개원일/.test(text)) return;
+      text = text.replace(/^\d+\s*[.)]\s*/, "").replace(/\s+/g, " ").trim();
+      const key = text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, "");
+      if (!key || seen.has(key)) return;
+      seen.add(key);
+      found.push({ text: truncate(text, 220), source: unit.file || "첨부 자료" });
+    });
+  });
+
+  return found.slice(0, 4);
 }
 
 /* ---------- 진입점 ---------- */
@@ -503,6 +548,7 @@ export function analyze(units) {
   analysis.infoRows = infoRows;
   analysis.targets = extractTargets(segments).map((item) => item.label);
   analysis.sources = unique(segments.map((segment) => segment.source)).slice(0, 12);
+  analysis.references = extractReferences(units);
   analysis.charCount = segments.reduce((sum, segment) => sum + segment.text.length, 0);
   analysis.generatedAt = new Date().toISOString();
 

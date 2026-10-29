@@ -6,7 +6,7 @@
 <meta name="description" content="부산3지점 통합 영업 대시보드 - PDF·PPT 자료를 분석해 A4 1페이지 홍보물과 영업 제안서를 자동으로 만듭니다. 모든 파일 처리는 브라우저 안에서만 이루어집니다.">
 <title>부산3지점 통합 영업 대시보드 | 1P 홍보물 · 제안서 자동생성</title>
 <link rel="icon" href="ci-seegene.png">
-<link rel="stylesheet" href="style.css?v=20261028f">
+<link rel="stylesheet" href="style.css?v=20261029b">
 </head>
 <body>
 
@@ -241,6 +241,7 @@
         <div class="panel">
           <div class="toolbar">
             <button type="button" class="btn" data-action="fill-from-analysis">자료에서 자동 채우기</button>
+            <button type="button" class="btn secondary" data-action="fill-topic-flyer">제안서 주제 내용으로 채우기</button>
             <button type="button" class="btn secondary" data-action="fit-flyer">자동 맞춤(1장 맞추기)</button>
             <button type="button" class="btn secondary" data-action="reset-flyer">초기화</button>
           </div>
@@ -321,7 +322,7 @@
     <!-- ================= 제안서 ================= -->
     <section class="page" id="proposal">
       <h2>제안서 작성</h2>
-      <p class="subtitle">신규 개원·거래 전환·기존 거래처 지원을 3페이지 영업 제안서로 구성합니다. 첨부 검사자료의 이미지와 확인된 정보는 해당 영역에 반영하고, 생성된 문서는 수정 가능한 초안으로 저장할 수 있습니다.</p>
+      <p class="subtitle">신규 개원·거래 전환·기존 거래처 지원을 3~6페이지 영업 제안서로 구성합니다. 첨부 검사자료의 이미지와 확인된 정보는 해당 영역에 반영하고, 생성된 문서는 수정 가능한 초안으로 저장할 수 있습니다.</p>
 
       <div class="card">
         <h3>1. 거래처 정보</h3>
@@ -331,6 +332,7 @@
           <div>
             <label for="pType">제안 유형</label>
             <select id="pType">
+              <option value="custom">주제 맞춤 제안 (직접 구성)</option>
               <option value="opening">신규 개원 제안</option>
               <option value="conversion">거래처 전환 제안</option>
               <option value="support">거래처 지원 제안</option>
@@ -345,6 +347,48 @@
         <textarea id="pNeeds" placeholder="예: 개원 초기 운영 정착, 타사 의뢰 단계적 전환, 수거·결과 확인·현장 대응 개선"></textarea>
         <label for="pAction">후속 조치 및 일정</label>
         <textarea id="pAction" placeholder="예: 다음 방문에서 운영 조건 확인, 전환 범위 합의, 내부 확인 후 실행 일정 확정"></textarea>
+      </div>
+
+
+      <div class="card mt-16">
+        <h3>주제 맞춤 구성 <span class="meta">(제안 유형 ‘주제 맞춤 제안’에서 사용 · 비워 둔 칸은 제안서에서 자동으로 빠집니다)</span></h3>
+        <div class="toolbar">
+          <button type="button" class="btn secondary" data-action="apply-topic-preset" data-preset="policy">예시 불러오기 (제도 개편 대응)</button>
+          <button type="button" class="btn secondary" data-action="clear-topic">주제 내용 비우기</button>
+        </div>
+        <label for="pTopicTitle">제안서 제목</label>
+        <input id="pTopicTitle" placeholder="예: 신규 검사 도입으로 달라지는 진료 · 제도 개편 대응 등">
+        <label for="pTopicLead">한 줄 메시지</label>
+        <input id="pTopicLead" placeholder="가장 강조하고 싶은 핵심 메시지">
+        <div class="grid grid2">
+          <div><label for="pLeftTitle">비교 ① 제목 (예: 현행)</label><input id="pLeftTitle"><label for="pLeftText">내용 (한 줄에 하나)</label><textarea id="pLeftText" rows="4"></textarea></div>
+          <div><label for="pRightTitle">비교 ② 제목 (예: 변경 후)</label><input id="pRightTitle"><label for="pRightText">내용 (한 줄에 하나)</label><textarea id="pRightText" rows="4"></textarea></div>
+        </div>
+        <label for="pPointsTitle">핵심 포인트 제목</label>
+        <input id="pPointsTitle" placeholder="예: 의원에 미치는 영향 / 도입 효과">
+        <label for="pPointsText">핵심 포인트 (한 줄에 하나, 형식: 제목 | 설명)</label>
+        <textarea id="pPointsText" rows="4" placeholder="예: 결과 회신 단축 | 당일 검체 수거로 결과 확인이 빨라집니다."></textarea>
+        <label for="pCriteriaTitle">선택 기준·체크 포인트 제목</label>
+        <input id="pCriteriaTitle" placeholder="예: 이제 이렇게 선택하세요">
+        <label for="pCriteriaText">선택 기준·체크 포인트 (한 줄에 하나)</label>
+        <textarea id="pCriteriaText" rows="3"></textarea>
+        <label for="pQuestionsText">함께 점검할 질문 (한 줄에 하나)</label>
+        <textarea id="pQuestionsText" rows="3"></textarea>
+        <label for="pStepsText">진행 단계 (한 줄에 하나, 형식: 시기 | 제목 | 설명)</label>
+        <textarea id="pStepsText" rows="4" placeholder="예: 1주차 | 현황 점검 | 현재 의뢰 항목과 수거 조건을 확인합니다."></textarea>
+        <label for="pMetricsText">홍보물 핵심 수치·키워드 (한 줄에 하나, 형식: 값 | 설명)</label>
+        <textarea id="pMetricsText" rows="3"></textarea>
+        <label for="pSourceNote">출처·유의사항</label>
+        <textarea id="pSourceNote" rows="2"></textarea>
+        <div class="grid grid2">
+          <div><label for="pContact">상담·문의 (담당자·연락처)</label><input id="pContact" value="장재웅  010-1234-5678"></div>
+          <div></div>
+        </div>
+        <label for="pStrengths">우리 센터 강점 · 지원 (한 줄에 하나)</label>
+        <textarea id="pStrengths" rows="5">1일 2회 검체 수거
+주말·공휴일 수거 지원
+특화·신규 검사 항목 세미나 지원
+청구 지원 전담 부서 신설</textarea>
       </div>
 
       <div class="card mt-16">
@@ -368,7 +412,7 @@
 
       <div class="toolbar mt-16">
         <button type="button" class="btn" data-action="gen-proposal">제안서 초안 만들기</button>
-        <button type="button" class="btn" data-action="export-proposal-pdf">PDF 저장 (A4 · 3페이지)</button>
+        <button type="button" class="btn" data-action="export-proposal-pdf">PDF 저장 (A4)</button>
         <button type="button" class="btn secondary" data-action="print-proposal">인쇄 / PDF로 저장</button>
         <button type="button" class="btn secondary" data-action="download-doc">Word 저장</button>
         <button type="button" class="btn secondary" data-action="copy-proposal">내용 복사</button>
@@ -541,6 +585,6 @@
   }
 })();
 </script>
-<script type="module" src="main.js?v=20261028m"></script>
+<script type="module" src="main.js?v=20261029b"></script>
 </body>
 </html>

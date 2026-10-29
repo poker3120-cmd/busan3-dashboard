@@ -20,7 +20,7 @@ import { sampleUnits, sampleFileReport } from "./demo.js";
 import {
   normalizeFlyer, renderFlyerHtml, renderFlyerEditor,
   findBestDense, findBestFit, measureFlyerHeight, flyerToPlainText,
-} from "./flyer.js?v=20261028d";
+} from "./flyer.js?v=20261029b";
 
 import {
   normalizeTraining, renderTrainingHtml, renderTrainingEditor,
@@ -28,8 +28,8 @@ import {
 } from "./training.js";
 
 import {
-  renderProposalHtml, proposalToPlainText,
-} from "./proposal.js?v=20261028f";
+  renderProposalHtml, proposalToPlainText, topicFlyerContent, TOPIC_PRESETS,
+} from "./proposal.js?v=20261029b";
 
 import {
   fitScaler, printFlyer, printHtml, exportFlyerPng, exportFlyerImagePdf,
@@ -554,7 +554,22 @@ function collectProposalInput() {
     conditions: $("pOfferConditions").value.trim(),
     support: $("pSupport").value.trim(),
     includeFlyer: $("pIncludeFlyer").checked,
+    ...collectTopicInput(),
   };
+}
+
+const TOPIC_FIELDS = {
+  topicTitle: "pTopicTitle", topicLead: "pTopicLead", leftTitle: "pLeftTitle", leftText: "pLeftText",
+  rightTitle: "pRightTitle", rightText: "pRightText", pointsTitle: "pPointsTitle", pointsText: "pPointsText",
+  criteriaTitle: "pCriteriaTitle", criteriaText: "pCriteriaText", questionsText: "pQuestionsText",
+  stepsText: "pStepsText", metricsText: "pMetricsText", sourceNote: "pSourceNote", contact: "pContact",
+};
+
+function collectTopicInput() {
+  const out = {};
+  Object.entries(TOPIC_FIELDS).forEach(([key, id]) => { out[key] = $(id) ? $(id).value.trim() : ""; });
+  out.strengths = $("pStrengths") ? $("pStrengths").value.split(/\n+/).map((s) => s.trim()).filter(Boolean) : [];
+  return out;
 }
 
 function updatePricingDisplay() {
@@ -901,6 +916,18 @@ function wireFlyer() {
 
     const f = state.flyer;
 
+    if (action === "fill-topic-flyer") {
+      if (!confirm("현재 홍보물 내용을 제안서의 ‘주제 맞춤 구성’ 내용으로 채웁니다. 직접 수정한 내용은 사라집니다. 계속할까요?")) return;
+      const content = topicFlyerContent(collectProposalInput());
+      if (!content.title) { setStatus($("exportStatus"), "먼저 제안서 화면의 ‘주제 맞춤 구성’에 제목을 입력해 주세요.", "err"); return; }
+      state.flyer = normalizeFlyer({ ...defaultFlyer(), ...content, imageId: state.flyer ? state.flyer.imageId : null });
+      saveFlyer();
+      renderFlyerEditorPanel();
+      renderFlyerPreview();
+      setStatus($("exportStatus"), "제안서의 주제 맞춤 내용으로 홍보물을 채웠습니다.", "ok");
+      return;
+    }
+
     if (action === "fill-from-analysis") {
       if (!state.analysis || (!state.analysis.title && !state.analysis.keyPoints.length)) {
         setStatus($("exportStatus"), "먼저 ‘자료 첨부·분석’에서 자료를 읽어 주세요.", "err");
@@ -1043,6 +1070,25 @@ function wireProposal() {
     const trigger = event.target.closest("[data-action]");
     if (!trigger) return;
     const action = trigger.dataset.action;
+
+    if (action === "apply-topic-preset") {
+      const preset = TOPIC_PRESETS[trigger.dataset.preset];
+      if (!preset) return;
+      if (!confirm("주제 맞춤 입력칸을 ‘" + preset.label + "’ 예시로 채웁니다. 입력한 내용이 사라집니다. 계속할까요?")) return;
+      Object.entries(preset.values).forEach(([id, value]) => { if ($(id)) $(id).value = value; });
+      $("pType").value = "custom";
+      $("pType").dispatchEvent(new Event("input", { bubbles: true }));
+      Object.values(TOPIC_FIELDS).concat(["pStrengths"]).forEach((id) => $(id) && $(id).dispatchEvent(new Event("input", { bubbles: true })));
+      setStatus($("proposalStatus"), "예시를 불러왔습니다. 내용을 강조할 주제에 맞게 수정한 뒤 ‘제안서 초안 만들기’를 눌러 주세요.", "ok");
+      return;
+    }
+
+    if (action === "clear-topic") {
+      if (!confirm("주제 맞춤 입력칸(센터 강점·연락처 제외)을 비웁니다. 계속할까요?")) return;
+      Object.entries(TOPIC_FIELDS).forEach(([, id]) => { if (id !== "pContact" && $(id)) $(id).value = ""; });
+      Object.values(TOPIC_FIELDS).forEach((id) => $(id) && $(id).dispatchEvent(new Event("input", { bubbles: true })));
+      return;
+    }
 
     if (action === "gen-proposal") {
       const { text, proposal } = buildProposalDocument();
@@ -1429,7 +1475,8 @@ function sheetFileName(key) {
 
 function wireProposalPersistence() {
   const ids = ["pClinic", "pManager", "pType", "pDate", "pSituation", "pNeeds", "pAction",
-    "pOfferItem", "pBasePrice", "pDiscountRate", "pOfferPeriod", "pOfferConditions", "pSupport"];
+    "pOfferItem", "pBasePrice", "pDiscountRate", "pOfferPeriod", "pOfferConditions", "pSupport",
+    ...Object.values(TOPIC_FIELDS), "pStrengths"];
   const KEY = "busan3_proposal_form_v1";
 
   try {

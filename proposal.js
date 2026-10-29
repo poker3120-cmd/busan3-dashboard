@@ -12,6 +12,7 @@ export const TYPE_TITLES = {
   conversion: "검사 의뢰 전환",
   support: "거래처 운영 지원",
   renewal: "협력 강화",
+  custom: "주제 맞춤 제안",
 };
 
 const TYPE_LEADS = {
@@ -19,9 +20,109 @@ const TYPE_LEADS = {
   conversion: "현재 의뢰 구조를 비교해 옮길 항목과 남길 항목을 구분해 제안합니다.",
   support: "거래처 운영에 필요한 지원 범위를 확인하고 실행 계획을 함께 정리합니다.",
   renewal: "현재 의뢰 현황을 점검하고 진료 특성에 맞는 추가 항목을 제안합니다.",
+  custom: "강조하고 싶은 주제에 맞춰 직접 구성하는 제안서입니다.",
 };
 
 const ORG = "재단법인 씨젠의료재단 부산3지점";
+
+
+/* ---------- 주제 맞춤 제안서 (입력값으로 구성) ---------- */
+const splitLines = (t) => String(t || "").split(/\n+/).map((s) => s.trim()).filter(Boolean);
+const splitCols = (line) => String(line).split("|").map((s) => s.trim());
+
+/** 폼 입력값을 주제 맞춤 제안서용 구조로 변환합니다. */
+function topicOf(input) {
+  const i = input || {};
+  const str = (v) => String(v == null ? "" : v).trim();
+  return {
+    title: str(i.topicTitle),
+    lead: str(i.topicLead),
+    leftTitle: str(i.leftTitle), left: splitLines(i.leftText),
+    rightTitle: str(i.rightTitle), right: splitLines(i.rightText),
+    pointsTitle: str(i.pointsTitle),
+    points: splitLines(i.pointsText).map((l) => { const c = splitCols(l); return { title: c[0] || "", body: c.slice(1).join(" | ") }; }).filter((x) => x.title),
+    criteriaTitle: str(i.criteriaTitle),
+    criteria: splitLines(i.criteriaText),
+    strengths: Array.isArray(i.strengths) ? i.strengths.map(str).filter(Boolean) : splitLines(i.strengths),
+    questions: splitLines(i.questionsText),
+    steps: splitLines(i.stepsText).map((l) => { const c = splitCols(l); return c.length >= 3 ? { time: c[0], title: c[1], body: c.slice(2).join(" | ") } : { time: "", title: c[0] || "", body: c[1] || "" }; }).filter((x) => x.title),
+    metrics: splitLines(i.metricsText).map((l) => { const c = splitCols(l); return { value: c[0] || "", label: c.slice(1).join(" | ") }; }).filter((x) => x.value),
+    source: str(i.sourceNote),
+  };
+}
+
+function typeTitle(input) {
+  if (input && input.type === "custom") return topicOf(input).title || TYPE_TITLES.custom;
+  return TYPE_TITLES[input && input.type];
+}
+
+function customProfile(input) {
+  const t = topicOf(input);
+  const fallbackSteps = [
+    { time: "사전", title: "현황 확인", body: "현재 운영 조건과 요청사항을 확인합니다." },
+    { time: "협의", title: "지원 범위 협의", body: "적용 가능한 지원 범위와 일정을 협의합니다." },
+    { time: "적용", title: "서비스 적용", body: "합의한 범위부터 순차 적용합니다." },
+    { time: "점검", title: "초기 운영 점검", body: "문의와 불편을 확인하고 필요한 조정을 협의합니다." },
+  ];
+  const points = t.points.length ? t.points.slice(0, 3)
+    : t.strengths.slice(0, 3).map((s) => ({ title: s, body: "" }));
+  return {
+    heroTitle: t.pointsTitle || "핵심 제안",
+    lead: t.lead || "거래처 상황에 맞춰 필요한 지원을 제안합니다.",
+    situation: "",
+    needs: t.strengths.length ? t.strengths.join(" · ") : "",
+    item: t.title || "맞춤 제안",
+    support: t.strengths.length ? t.strengths.join(" · ") : "운영 조건을 확인하고 적용 가능한 지원을 협의합니다.",
+    action: "현재 운영 조건을 확인하고 다음 일정을 협의합니다.",
+    valueTitle: t.pointsTitle || "핵심 제안",
+    valueLead: "",
+    points: points.length ? points : [{ title: "맞춤 지원", body: "" }],
+    checks: ["수거 일정", "결과 확인", "청구 지원"],
+    steps: t.steps.length ? t.steps.slice(0, 5) : fallbackSteps,
+  };
+}
+
+/** 예시 불러오기 — 제안서/홍보물 폼에 채워 넣는 값 (입력칸 id 기준). 직접 수정해서 사용하세요. */
+export const TOPIC_PRESETS = {
+  policy: {
+    label: "제도 개편 대응(예시)",
+    values: {
+      pTopicTitle: "검체 위·수탁 제도 개편, 검사센터 선택 기준이 달라집니다",
+      pTopicLead: "분리지급 시행을 앞두고 청구 준비와 센터 선택 기준을 함께 점검합니다.",
+      pLeftTitle: "현행 · 일괄청구, 사후정산",
+      pLeftText: "위탁기관이 검사료를 일괄 청구한 뒤 수탁기관과 정산합니다.\n위탁검사관리료(검사료의 10%)가 별도로 지급됩니다.\n정산 과정에서 검사료 할인 경쟁이 발생합니다.",
+      pRightTitle: "개편 후 · 분리지급",
+      pRightText: "위탁검사관리료가 폐지되고 위·수탁 기관별 수가가 신설됩니다.\n청구는 위탁기관이 하고, 검사료는 수탁기관에 직접 지급됩니다.\n할인 중심에서 품질·서비스 중심 경쟁으로 바뀝니다.",
+      pPointsTitle: "의원에 미치는 영향",
+      pPointsText: "청구 착오 주의 | 수탁기관 기호·의뢰일·PAIR 일련번호가 두 코드에서 다르면 심사불능이 될 수 있습니다.\n할인 중심 거래 종료 | 검사료 할인으로 센터를 고르던 관행이 제한되어 선택 기준이 달라집니다.\n질 관리 강화 | 인증 기준 개선, 환자안전사고 보고 의무화, 재수탁 제한 등이 추진됩니다.",
+      pCriteriaTitle: "이제 이렇게 선택하세요",
+      pCriteriaText: "검사 품질·인증\n검사 항목의 폭과 차별성\n검체 수거·결과 회신\n청구·행정 지원",
+      pQuestionsText: "현재 검사는 어느 기관에 의뢰하시며, 수거·결과 회신에서 아쉬운 점은 무엇인가요?\n청구SW 업체로부터 분리지급 개편 안내를 받으셨나요?\n검사기관을 바꾸거나 추가할 때 가장 우려되는 점은 무엇인가요?\n진료과 특성상 더 필요한 검사 항목이나 교육·세미나가 있으신가요?",
+      pStepsText: "사전 | 현황 점검 | 현재 검사기관, 의뢰 항목, 청구 방식과 수거 조건을 확인합니다.\n시행 전 | 청구 사전 준비 | 청구SW 코드 연계를 안내하고 시범 청구를 지원합니다.\n시행 시점 | 분리지급 시작 | 확정된 고시와 심평원 공지에 맞춰 청구 절차를 적용합니다.\n시행 후 | 모니터링 | 심사불능·반려 여부를 점검하고 정기 방문으로 문의를 확인합니다.",
+      pMetricsText: "폐지 | 위탁검사관리료\n분리지급 | 청구는 의원, 검사료는 센터에 직접 지급\n12월 예정 | 시행 시기",
+      pSourceNote: "출처: 보건복지부 건정심 의결(2025.12), 심평원 청구SW 업체 간담회 보도(2026.9). 시행 시기와 보상 비율 등 세부 내용은 고시 확정 시 달라질 수 있습니다.",
+    },
+  },
+};
+
+/** 주제 맞춤 내용으로 1P 홍보물 편집기에 채울 값 */
+export function topicFlyerContent(input) {
+  const t = topicOf(input);
+  const pts = t.points.length ? t.points : t.criteria.map((c) => ({ title: c, body: "" }));
+  return {
+    mode: "topic",
+    kicker: "제안 안내",
+    title: t.title,
+    subtitle: t.lead,
+    pointsTitle: t.pointsTitle,
+    metrics: t.metrics.slice(0, 3),
+    points: pts.slice(0, 4).map((x, i) => ({ icon: String(i + 1), title: x.title, desc: x.body })),
+    infoRows: t.strengths.map((s, i) => ({ field: "지원 " + (i + 1), value: s })).slice(0, 8),
+    targets: [],
+    references: t.source ? [t.source] : [],
+    footerContact: safe(input && input.contact, ""),
+  };
+}
 
 /* 신규 개원·타사 전환 영업은 검사 설명보다 운영 가치와 전환 실행에 초점을 둡니다. */
 const SALES_PROFILES = {
@@ -123,10 +224,11 @@ function isAcquisitionType(type) {
 }
 
 function isOnePageProposalType(type) {
-  return ["opening", "conversion", "support", "renewal"].includes(type);
+  return ["opening", "conversion", "support", "renewal", "custom"].includes(type);
 }
 
-function salesProfile(type) {
+function salesProfile(type, input) {
+  if (type === "custom") return customProfile(input);
   return SALES_PROFILES[type] || SALES_PROFILES.opening;
 }
 
@@ -210,7 +312,7 @@ function coverPage(input, analysis, total) {
   const clinic = safe(input.clinic, "거래처명 미입력");
   const manager = safe(input.manager, "원장님");
   const date = formatKoreanDate(input.date) || safe(input.date, "");
-  const title = TYPE_TITLES[input.type] || "거래처 협력 제안";
+  const title = typeTitle(input) || "거래처 협력 제안";
   const lead = TYPE_LEADS[input.type] || "";
 
   const stats = (analysis.metrics || []).slice(0, 3);
@@ -261,8 +363,8 @@ function coverPage(input, analysis, total) {
 /* ---------- 신규 개원·타사 전환 영업 제안서: 1~2페이지 ---------- */
 
 function businessOnePage(input) {
-  const profile = salesProfile(input.type);
-  const title = TYPE_TITLES[input.type] || "검사서비스 안내";
+  const profile = salesProfile(input.type, input);
+  const title = typeTitle(input) || "검사서비스 안내";
   const clinic = safe(input.clinic, "거래처명 미입력");
   const manager = safe(input.manager, "");
   const date = formatKoreanDate(input.date) || safe(input.date, "");
@@ -331,8 +433,8 @@ function businessOnePage(input) {
 }
 
 function businessCoverPage(input, total, options = {}) {
-  const profile = salesProfile(input.type);
-  const title = TYPE_TITLES[input.type] || "거래처 협력 제안";
+  const profile = salesProfile(input.type, input);
+  const title = typeTitle(input) || "거래처 협력 제안";
   const clinic = safe(input.clinic, "거래처명 미입력");
   const manager = safe(input.manager, "담당자");
   const date = formatKoreanDate(input.date) || safe(input.date, "");
@@ -345,7 +447,7 @@ function businessCoverPage(input, total, options = {}) {
     : '<div class="pd-business-hero-art" aria-hidden="true"><span>SEEGENE</span><b>검사 운영<br>파트너십</b><i>BUSAN BRANCH 3</i></div>';
   const situation = safe(input.situation, "");
   const situationCard = situation
-    ? '<div class="pd-business-brief-card"><span>협의가 필요한 운영 조건</span><p>' + escapeHtml(situation) + '</p></div>'
+    ? '<div class="pd-business-brief-card"><span>' + (input.type === 'custom' ? '거래처 현황' : '협의가 필요한 운영 조건') + '</span><p>' + escapeHtml(situation) + '</p></div>'
     : "";
   return '<section class="proposal-page pd-cover pd-business-cover">' +
     '<div class="pd-cover-shape" aria-hidden="true"></div><div class="pd-cover-dots" aria-hidden="true"></div>' +
@@ -370,8 +472,8 @@ function businessCoverPage(input, total, options = {}) {
   '</section>';
 }
 
-function businessValuePage(input, analysis, index, total) {
-  const profile = salesProfile(input.type);
+function businessValuePage(input, analysis, index, total, no = "01") {
+  const profile = salesProfile(input.type, input);
   const a = analysis || { keyPoints: [], infoRows: [], metrics: [], targets: [], sources: [] };
   const points = profile.points.map((point, i) =>
     '<article class="pd-business-value"><span class="pd-business-value-no">' + String(i + 1).padStart(2, "0") + '</span>' +
@@ -402,7 +504,7 @@ function businessValuePage(input, analysis, index, total) {
     : "";
   const checks = profile.checks.map((item) => '<span class="pd-business-chip">' + escapeHtml(item) + '</span>').join("");
   return '<section class="proposal-page pd-business-detail-page">' +
-    sectionHead("01", "운영 가치와 검사자료 핵심", "현장 운영을 개선하는 지원 방향과 첨부 자료에서 확인한 내용을 함께 정리했습니다.") +
+    sectionHead(no, "운영 가치와 검사자료 핵심", "현장 운영을 개선하는 지원 방향과 첨부 자료에서 확인한 내용을 함께 정리했습니다.") +
     '<div class="pd-body pd-business-detail-body">' +
       '<div class="pd-business-grid">' + points + '</div>' +
       (metricHtml ? '<div class="pd-business-data-block"><h3>자료에 명시된 주요 수치</h3>' + metricHtml + '</div>' : '') +
@@ -415,8 +517,8 @@ function businessValuePage(input, analysis, index, total) {
     '</div>' + pageFoot(index, total) + '</section>';
 }
 
-function businessActionPage(input, index, total) {
-  const profile = salesProfile(input.type);
+function businessActionPage(input, index, total, no = "02") {
+  const profile = salesProfile(input.type, input);
   const hasPrice = input.proposed !== null && input.proposed !== undefined && input.hasBase && input.hasRate;
   const steps = profile.steps.map((step, i) =>
     '<li><span class="pd-tl-no">' + (i + 1) + '</span><div class="pd-business-step-main">' +
@@ -440,7 +542,7 @@ function businessActionPage(input, index, total) {
   const action = safe(input.action, profile.action);
 
   return '<section class="proposal-page pd-business-action-page">' +
-    sectionHead("02", "도입부터 안정화까지", "운영 조건을 확인하고 합의한 범위부터 단계적으로 적용합니다.") +
+    sectionHead(no, input.type === "custom" ? "진행 계획과 다음 단계" : "도입부터 안정화까지", "운영 조건을 확인하고 합의한 범위부터 단계적으로 적용합니다.") +
     '<div class="pd-body pd-business-action-body">' +
       '<div class="pd-block"><h3 class="pd-sub">진행 일정</h3><ol class="pd-timeline pd-business-timeline">' + steps + '</ol></div>' +
       '<div class="pd-block"><h3 class="pd-sub">적용 범위와 협의 조건</h3><div class="pd-business-terms">' + conditionCards + '</div></div>' +
@@ -449,6 +551,52 @@ function businessActionPage(input, index, total) {
         '<div class="pd-business-action-card"><h3>다음 단계</h3><p>' + escapeHtml(action) + '</p></div>' +
       '</div>' +
       '<div class="pd-business-close-banner"><b>현장에 맞는 검사 운영을 함께 준비하겠습니다.</b><span>재단법인 씨젠의료재단 부산3지점</span></div>' +
+    '</div>' + pageFoot(index, total) + '</section>';
+}
+
+
+function hasChangeContent(input) {
+  const t = topicOf(input);
+  return Boolean(t.left.length || t.right.length || t.points.length || t.source);
+}
+function hasStrengthContent(input) {
+  const t = topicOf(input);
+  return Boolean(t.criteria.length || t.strengths.length || t.questions.length || safe(input.contact));
+}
+
+function topicChangePage(input, index, total, no) {
+  const t = topicOf(input);
+  const col = (title, items, cls) => items.length || title
+    ? '<div class="pd-policy-col ' + cls + '"><h3>' + escapeHtml(title) + '</h3><ul>' + items.map((b) => '<li>' + escapeHtml(b) + '</li>').join("") + '</ul></div>'
+    : "";
+  const cols = col(t.leftTitle, t.left, "is-old") + col(t.rightTitle, t.right, "is-new");
+  const compare = cols ? '<div class="pd-policy-compare' + ((t.left.length || t.leftTitle) && (t.right.length || t.rightTitle) ? "" : " is-single") + '">' + cols + '</div>' : "";
+  const points = t.points.map((e, i) =>
+    '<article class="pd-business-value"><span class="pd-business-value-no">' + String(i + 1).padStart(2, "0") + '</span>' +
+    '<div><h3>' + escapeHtml(e.title) + '</h3>' + (e.body ? '<p>' + escapeHtml(e.body) + '</p>' : '') + '</div></article>'
+  ).join("");
+  return '<section class="proposal-page pd-business-detail-page">' +
+    sectionHead(no, "배경과 핵심 포인트", t.lead) +
+    '<div class="pd-body pd-business-detail-body">' + compare +
+      (points ? '<div class="pd-business-data-block"><h3>' + escapeHtml(t.pointsTitle || "핵심 포인트") + '</h3><div class="pd-business-grid">' + points + '</div></div>' : '') +
+      (t.source ? '<p class="pd-policy-note">' + escapeHtml(t.source) + '</p>' : '') +
+    '</div>' + pageFoot(index, total) + '</section>';
+}
+
+function topicStrengthPage(input, index, total, no) {
+  const t = topicOf(input);
+  const criteria = t.criteria.map((c, i) => '<div><b>' + (i + 1) + '</b><span>' + escapeHtml(c) + '</span></div>').join("");
+  const strengths = t.strengths.map((s, i) =>
+    '<article class="pd-business-value"><span class="pd-business-value-no">' + String(i + 1).padStart(2, "0") + '</span><div><h3>' + escapeHtml(s) + '</h3></div></article>'
+  ).join("");
+  const contact = safe(input.contact, "");
+  return '<section class="proposal-page pd-business-detail-page">' +
+    sectionHead(no, "씨젠의료재단 부산3지점의 제안", "") +
+    '<div class="pd-body pd-business-detail-body">' +
+      (criteria ? '<div class="pd-business-data-block"><h3>' + escapeHtml(t.criteriaTitle || "선택 기준") + '</h3><div class="pd-policy-criteria">' + criteria + '</div></div>' : '') +
+      (strengths ? '<div class="pd-business-data-block"><h3>씨젠의 지원</h3><div class="pd-business-grid">' + strengths + '</div></div>' : '') +
+      (t.questions.length ? '<div class="pd-business-data-block"><h3>함께 점검할 질문</h3><ul class="pd-policy-questions">' + t.questions.map((q) => '<li>' + escapeHtml(q) + '</li>').join("") + '</ul></div>' : '') +
+      (contact ? '<div class="pd-business-callout"><span>상담·문의</span><p>' + escapeHtml(contact) + '</p></div>' : '') +
     '</div>' + pageFoot(index, total) + '</section>';
 }
 
@@ -789,6 +937,20 @@ function closingPage(analysis, index, total) {
 export function renderProposalPages(input, analysis, options = {}) {
   const a = analysis || { metrics: [], keyPoints: [], infoRows: [], targets: [], sources: [] };
 
+  if (input?.type === "custom") {
+    const hasData = (a.keyPoints || []).some((x) => safe(x && x.text)) || (a.infoRows || []).some((r) => safe(r && r.field) && safe(r && r.value));
+    const useChange = hasChangeContent(input), useStrength = hasStrengthContent(input);
+    const total = 2 + (useChange ? 1 : 0) + (useStrength ? 1 : 0) + (hasData ? 1 : 0);
+    let idx = 1, no = 1;
+    const nn = () => String(no++).padStart(2, "0");
+    const pages = [businessCoverPage(input, total, options)];
+    if (useChange) pages.push(topicChangePage(input, idx++, total, nn()));
+    if (useStrength) pages.push(topicStrengthPage(input, idx++, total, nn()));
+    if (hasData) pages.push(businessValuePage(input, a, idx++, total, nn()));
+    pages.push(businessActionPage(input, idx, total, nn()));
+    return { pages, total };
+  }
+
   if (isOnePageProposalType(input?.type)) {
     const total = 3;
     const pages = [
@@ -827,7 +989,7 @@ function legacyProposalToPlainText(input, analysis) {
 
   const lines = [
     "부산3지점 맞춤형 영업 제안서",
-    TYPE_TITLES[input.type] || "거래처 협력 제안",
+    typeTitle(input) || "거래처 협력 제안",
     "",
     `거래처: ${clinic}    담당자: ${manager}    작성일: ${date}`,
     "",
@@ -884,14 +1046,14 @@ function legacyProposalToPlainText(input, analysis) {
 
 
 function acquisitionProposalToPlainText(input, analysis) {
-  const profile = salesProfile(input.type);
+  const profile = salesProfile(input.type, input);
   const a = analysis || { keyPoints: [], infoRows: [], metrics: [], targets: [], sources: [] };
   const clinic = safe(input.clinic, "거래처명 미입력");
   const manager = safe(input.manager, "");
   const date = formatKoreanDate(input.date) || safe(input.date, "");
   const lines = [
     "재단법인 씨젠의료재단 부산3지점",
-    TYPE_TITLES[input.type] || "검사서비스 안내",
+    typeTitle(input) || "검사서비스 안내",
     clinic + " 귀중",
     ...([manager, date].filter(Boolean).length ? ["담당자·작성일: " + [manager, date].filter(Boolean).join(" / ")] : []),
     "",
@@ -903,6 +1065,22 @@ function acquisitionProposalToPlainText(input, analysis) {
   profile.points.slice(0, 3).forEach((point, index) => {
     lines.push((index + 1) + ". " + point.title + " — " + point.body);
   });
+  if (input.type === "custom") {
+    const t = topicOf(input);
+    if (t.lead) lines.push("", t.lead);
+    [[t.leftTitle, t.left], [t.rightTitle, t.right]].forEach(([title, items]) => {
+      if (title || items.length) { lines.push("", title); items.forEach((b) => lines.push("· " + b)); }
+    });
+    if (t.points.length) {
+      lines.push("", t.pointsTitle || "핵심 포인트");
+      t.points.forEach((x, i) => lines.push((i + 1) + ". " + x.title + (x.body ? " — " + x.body : "")));
+    }
+    if (t.criteria.length) lines.push("", (t.criteriaTitle || "선택 기준") + ": " + t.criteria.join(" / "));
+    if (t.strengths.length) { lines.push("", "씨젠의 지원"); t.strengths.forEach((s) => lines.push("· " + s)); }
+    if (t.questions.length) { lines.push("", "함께 점검할 질문"); t.questions.forEach((q, i) => lines.push((i + 1) + ". " + q)); }
+    if (safe(input.contact)) lines.push("", "상담·문의: " + safe(input.contact));
+    if (t.source) lines.push(t.source);
+  }
   const metrics = (a.metrics || []).filter((m) => safe(m && m.value)).slice(0, 4);
   if (metrics.length) {
     lines.push("", "자료에 명시된 수치");

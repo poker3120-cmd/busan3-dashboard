@@ -63,6 +63,7 @@ const FLYER_LOGO_DATA = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAU8AAAAyC
 /* ---------- 리디자인: 책자형 정보 계층의 A4 1P 홍보물 ---------- */
 export function renderFlyerHtml(flyer, image, denseLevel = 0) {
   const f = normalizeFlyer(flyer);
+  const isTopic = f.mode === "topic";
   const dense = autoDense(denseLevel);
   const hasImage = Boolean(image && image.dataUrl);
   const title = f.title || "홍보물 제목을 입력하세요";
@@ -88,7 +89,7 @@ export function renderFlyerHtml(flyer, image, denseLevel = 0) {
   '</header>' +
   '<section class="fl-hero">' +
     '<div class="fl-hero-copy">' +
-      '<p class="fl-hero-eyebrow">LABORATORY SERVICE · INFORMATION</p>' +
+      '<p class="fl-hero-eyebrow">' + (isTopic ? 'SERVICE PROPOSAL' : 'LABORATORY SERVICE · INFORMATION') + '</p>' +
       '<h1 class="fl-title ' + titleClass + '">' + escapeHtml(title) + '</h1>' +
       (f.subtitle ? '<p class="fl-sub">' + escapeHtml(f.subtitle) + '</p>' : '') +
       '<div class="fl-hero-rule"><span></span><span></span><span></span></div>' +
@@ -100,7 +101,7 @@ export function renderFlyerHtml(flyer, image, denseLevel = 0) {
   const points = f.points.length
     ? '<section class="fl-points-section">' +
         '<div class="fl-section-heading"><div class="fl-section-number">01</div><div>' +
-          '<span>TEST HIGHLIGHTS</span><h2>검사 핵심 특징</h2></div></div>' +
+          '<span>' + (isTopic ? 'KEY POINTS' : 'TEST HIGHLIGHTS') + '</span><h2>' + escapeHtml(isTopic ? (f.pointsTitle || '핵심 포인트') : '검사 핵심 특징') + '</h2></div></div>' +
         '<div class="fl-points">' + f.points.map((p, i) =>
           '<article class="fl-point">' +
             '<span class="fl-point-index">' + (p.icon || String(i + 1).padStart(2, "0")) + '</span>' +
@@ -129,7 +130,7 @@ export function renderFlyerHtml(flyer, image, denseLevel = 0) {
   const metrics = f.metrics.length
     ? '<section class="fl-evidence-section">' +
         '<div class="fl-section-heading"><div class="fl-section-number">02</div><div>' +
-          '<span>SUPPORTING EVIDENCE</span><h2>자료에서 확인한 주요 수치</h2></div></div>' +
+          '<span>' + (isTopic ? 'AT A GLANCE' : 'SUPPORTING EVIDENCE') + '</span><h2>' + (isTopic ? '한눈에 보기' : '자료에서 확인한 주요 수치') + '</h2></div></div>' +
         '<div class="fl-metrics" aria-label="자료에 기재된 핵심 지표">' + f.metrics.slice(0, 4).map((m, i) =>
           '<div class="fl-metric"><span class="fl-metric-no">' + String(i + 1).padStart(2, "0") + '</span>' +
             '<div><div class="v">' + escapeHtml(m.value || "—") + '</div>' +
@@ -143,7 +144,7 @@ export function renderFlyerHtml(flyer, image, denseLevel = 0) {
   const infoTable = infoRows.length
     ? '<section class="fl-info-panel">' +
         '<div class="fl-section-heading"><div class="fl-section-number">03</div><div>' +
-          '<span>TEST INFORMATION</span><h2>검사 정보</h2></div></div>' +
+          '<span>' + (isTopic ? 'OUR SUPPORT' : 'TEST INFORMATION') + '</span><h2>' + (isTopic ? '씨젠의료재단 부산3지점의 지원' : '검사 정보') + '</h2></div></div>' +
         '<div class="fl-spec-table-wrap"><table class="fl-spec-table"><thead><tr>' +
           infoRows.map((r) => '<th>' + escapeHtml(r.field || "항목") + '</th>').join("") +
         '</tr></thead><tbody><tr>' +
@@ -171,7 +172,7 @@ export function renderFlyerHtml(flyer, image, denseLevel = 0) {
     : '';
 
   const references = f.references.length
-    ? '<section class="fl-citations"><div class="fl-citations-head"><span>REFERENCE</span><b>참고문헌</b></div><ol>' +
+    ? '<section class="fl-citations"><div class="fl-citations-head"><span>REFERENCE</span><b>' + (isTopic ? '출처·유의사항' : '참고문헌') + '</b></div><ol>' +
         f.references.slice(0, 3).map((reference) => '<li>' + escapeHtml(truncate(reference, 170)) + '</li>').join("") +
       '</ol></section>'
     : '';

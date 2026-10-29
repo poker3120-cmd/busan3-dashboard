@@ -15,10 +15,10 @@ let pdfjsPromise = null;
 
 async function getPdfjs() {
   if (!pdfjsPromise) {
-    pdfjsPromise = import("../vendor/pdf.min.js")
+    pdfjsPromise = import("../vendor/pdf.mjs")
       .then((lib) => {
         const pdfjs = lib.default && lib.default.getDocument ? lib.default : lib;
-        pdfjs.GlobalWorkerOptions.workerSrc = new URL("../vendor/pdf.worker.min.js", import.meta.url).href;
+        pdfjs.GlobalWorkerOptions.workerSrc = new URL("../vendor/pdf.worker.mjs", import.meta.url).href;
         return pdfjs;
       })
       .catch((error) => {
